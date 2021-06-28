@@ -136,7 +136,7 @@ class VideoClipActivity : AppCompatActivity(),VideoInfo.VideoInfoPareImage,
         asyncTask = null
         val thum = "${name}.jpeg"
         Helper.copyFile(videoInfo!!.imageList!![videoInfo!!.editDuration - 1],thum)
-        Helper.toSuccess(that,name,thum)
+        Helper.toSuccess(that,"file://${name}.mp4","file://$thum")
       }
       override fun onFFmpegFailed(executeOutput: String?) {
         Toast.makeText(that,"Video Parsing Error",Toast.LENGTH_LONG).show()
