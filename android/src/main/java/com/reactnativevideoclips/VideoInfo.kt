@@ -23,7 +23,7 @@ class VideoInfo constructor(val uri: Uri, val context: Context, private val temp
   var imageList:Array<String>? = null
   var name:String = ""
   interface VideoInfoPareImage{
-    fun onFFmpegProgress(progress: Float){
+    fun onFFmpegProgress(progress: Double){
 
     }
     fun onFFmpegFailed(){
@@ -91,8 +91,8 @@ class VideoInfo constructor(val uri: Uri, val context: Context, private val temp
       override fun onFFmpegProgress(progress: Int?) {
 
         if (progress != null) {
-          Log.d("onFFmpegProgress", (progress   / (duration * 1000)).toFloat().toString())
-          that.holder.onFFmpegProgress((progress   / (duration * 1000)).toFloat())
+          Log.d("onFFmpegProgress", "${progress/1000}/${duration} - ${((progress.toDouble() / 1000)  / duration.toDouble())}")
+          that.holder.onFFmpegProgress((progress.toDouble() / 1000)  / duration.toDouble())
         }
       }
 

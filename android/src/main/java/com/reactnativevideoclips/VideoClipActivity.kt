@@ -60,9 +60,10 @@ class VideoClipActivity : AppCompatActivity(),VideoInfo.VideoInfoPareImage,
     }
   }
   // 解析视频进度
-  override fun onFFmpegProgress(progress: Float) {
+  override fun onFFmpegProgress(progress:Double) {
     super.onFFmpegProgress(progress)
-    if(progress > 0.3 && !isPlayer && pageState == 1){
+    Log.d("progress123", progress.toString())
+    if(progress > 0.1 && !isPlayer && pageState == 1){
       loadPage?.visibility = View.GONE
       mainPage?.visibility = View.VISIBLE
       selectVideo()
@@ -136,7 +137,7 @@ class VideoClipActivity : AppCompatActivity(),VideoInfo.VideoInfoPareImage,
         asyncTask = null
         val thum = "${name}.jpeg"
         Helper.copyFile(videoInfo!!.imageList!![videoInfo!!.editDuration - 1],thum)
-        Helper.toSuccess(that,"file://${name}.mp4","file://$thum")
+        Helper.toSuccess(that,"file://${name}.mp4","file://$thum",videoInfo!!.name + ".mp4")
       }
       override fun onFFmpegFailed(executeOutput: String?) {
         Toast.makeText(that,"Video Parsing Error",Toast.LENGTH_LONG).show()

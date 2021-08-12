@@ -164,6 +164,7 @@ class ThumbnailsListView: UIView {
     }
     func setUpView(asset:AVURLAsset) {
         let frame = self.frame
+        backgroundColor = .black
         self.time = Int32(CMTimeGetSeconds(asset.duration))
         self.generator = AVAssetImageGenerator.init(asset: asset)
         self.generator?.appliesPreferredTrackTransform = true
@@ -197,6 +198,7 @@ class ThumbnailsListView: UIView {
         let contentView = UICollectionView.init(frame: CGRect.init(x: 40, y: 0, width: frame.size.width - 40, height: frame.size.height), collectionViewLayout: layer)
         contentView.showsHorizontalScrollIndicator = false
         contentView.dataSource = self
+        contentView.backgroundColor = .black
         contentView.delegate = self
         contentView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 40)
         contentView.register(ImageCell.self, forCellWithReuseIdentifier: ThumbnailsListView.ThumbnailsListViewID)
@@ -246,6 +248,7 @@ class ThumbnailsListView: UIView {
         
     }
     public func startPlay(time:Float){
+        self.stopPlay()
         guard let pointView = self.pointView else {
             return
         }
@@ -255,7 +258,7 @@ class ThumbnailsListView: UIView {
         if(t < 1){
             t = 1
         }
-        UIView.animate(withDuration: TimeInterval(t), delay: 0.0, options: [.repeat,.curveLinear]) {
+        UIView.animate(withDuration: TimeInterval(t), delay: 0.0, options: [.curveLinear]) {
             pointView.frame = CGRect.init(x: self.rightBorderView!.center.x, y: 0, width: 2, height: self.frame.size.height)
         } completion: { finnish in
             

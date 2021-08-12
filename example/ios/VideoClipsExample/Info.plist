@@ -57,5 +57,7 @@
 	<string>In order to select/save photo, we need your permission to use camera</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>In order to select/save photo, we need your permission to use camera</string>
+  <key>NSCameraUsageDescription</key>
+  <string>In order to select/save photo, we need your permission to use camera</string>
 </dict>
 </plist>

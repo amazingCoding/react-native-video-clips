@@ -27,10 +27,13 @@ class VideoClipsViewController:UIViewController{
     weak var imageListView:ThumbnailsListView?
     var startRange:Float64 = 0
     var endRange:Float64 = 1.0
+    var url:URL?
+    var isLoad:Bool = false
     weak var loadView:UIActivityIndicatorView?
-    static func start(vc:UIViewController,resolve:@escaping RCTPromiseResolveBlock,reject:@escaping RCTPromiseRejectBlock){
-        let imageVc = VideoClipsViewController.init(resolve: resolve, reject: reject)
-        vc.present(imageVc, animated: false) {}
+    static func start(vc:UIViewController,url:URL,resolve:@escaping RCTPromiseResolveBlock,reject:@escaping RCTPromiseRejectBlock){
+        let videoVC = VideoClipsViewController.init(resolve: resolve, reject: reject)
+        videoVC.url = url
+        vc.present(videoVC, animated: false) {}
     }
     init(resolve:@escaping RCTPromiseResolveBlock,reject:@escaping RCTPromiseRejectBlock) {
         self.resolve = resolve
@@ -53,11 +56,27 @@ class VideoClipsViewController:UIViewController{
             self.player?.pause()
         }
         self.player = nil
+        self.url = nil
+        self.imageListView?.removeFromSuperview()
         super.dismiss(animated: flag, completion: completion)
     }
     override func viewDidLoad() {
         self.view.backgroundColor = .clear
-        self.showVideoSelect()
+        self.addLoadingView()
+        
+    }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated);
+        
+        if(!isLoad){
+            guard let url = self.url else {
+                return
+            }
+            self.loadVideo(url: url)
+            self.setUpView()
+        }
+        isLoad = true
+        
     }
     func addDoneLoad() -> UIView {
         let loadView = UIView.init(frame: self.view.bounds)
@@ -75,6 +94,8 @@ class VideoClipsViewController:UIViewController{
             let time =  CMTime(seconds: Double(startRange / 1000), preferredTimescale: 1)
             self.player?.seek(to: time)
             self.player?.play()
+            
+            imageListView?.startPlay(time: Float(self.endRange - self.startRange))
         }
     }
     func clearView(){
@@ -93,28 +114,6 @@ class VideoClipsViewController:UIViewController{
         self.view.addSubview(load)
         load.startAnimating()
         self.loadView = load
-    }
-    func showVideoSelect(){
-        self.clearView()
-        if #available(iOS 14, *) {
-            var configuration = PHPickerConfiguration.init()
-            configuration.preferredAssetRepresentationMode = .current
-            configuration.filter = PHPickerFilter.videos
-            let picker = PHPickerViewController.init(configuration: configuration)
-            picker.delegate = self
-            self.present(picker, animated: true) {
-            }
-            return
-        }
-
-        let picker = UIImagePickerController()
-        picker.sourceType = .photoLibrary
-        picker.mediaTypes = [kUTTypeMovie as String]
-        picker.modalPresentationStyle = .fullScreen
-        picker.delegate = self
-        picker.allowsEditing = false
-        self.present(picker, animated: true) {
-        }
     }
     func setUpView() {
         guard let asset = self.asset else {
@@ -153,7 +152,9 @@ class VideoClipsViewController:UIViewController{
         let cancelBtn = OpacityButton.init(frame: CGRect.init(x: 10, y: imageListViewFrame.maxY + 20, width: 80, height: 40), text: "Cancel", mainColor: .clear, textColor: .white) {
             weakSelf?.player?.pause()
             weakSelf?.player = nil
-            weakSelf?.showVideoSelect()
+            weakSelf?.dismiss(animated: true, completion: {
+                
+            })
         }
         self.view.addSubview(cancelBtn)
         
@@ -207,7 +208,9 @@ class VideoClipsViewController:UIViewController{
         let trackTimeRange = CMTimeRangeMake(start: startcm, duration: durationcm)
         print("myTime",self.startRange / 1000 ,self.endRange / 1000,len / 1000)
         // 导出
-        guard let exportSession = AVAssetExportSession.init(asset: asset, presetName: AVAssetExportPresetPassthrough) else {
+        // AVAssetExportPresetPassthrough 9.9M
+        // AVAssetExportPresetMediumQuality 0.7M
+        guard let exportSession = AVAssetExportSession.init(asset: asset, presetName: AVAssetExportPresetMediumQuality) else {
             return
         }
         exportSession.outputURL = outputUrl
@@ -220,7 +223,6 @@ class VideoClipsViewController:UIViewController{
                 let status = exportSession.status
                 switch status {
                 case .failed:
-//                    print("error - xxx",exportSession.error)
                     load?.removeFromSuperview()
                     weakSelf?.player?.pause()
                     weakSelf?.player = nil
@@ -247,6 +249,14 @@ class VideoClipsViewController:UIViewController{
                     // 获取视频路径
                     let newAsset = AVURLAsset.init(url: outputUrl)
                     let generator = AVAssetImageGenerator.init(asset: newAsset)
+                    do{
+                        let res =  try FileManager.default.attributesOfItem(atPath: outputUrl.path)
+                        let size = res[FileAttributeKey.size] as! Double
+                        print("fileSize:",size / (1024 * 1024))
+                    }
+                    catch let err{
+                        print(err)
+                    }
                     generator.appliesPreferredTrackTransform = true
                     let time = CMTime(value: 1, timescale: 60)
                     do{
@@ -283,101 +293,16 @@ class VideoClipsViewController:UIViewController{
             }
         }
     }
-    func loadVideo(url:URL,flag:Bool){
-        let path = NSTemporaryDirectory() + url.lastPathComponent
-        let newURL = NSURL.fileURL(withPath: path)
-        let fm = FileManager.default
-        if(fm.fileExists(atPath: path)){
-            do {
-                try fm.removeItem(at: newURL)
-            } catch let err {
-                print(err)
-            }
-            
+    public func loadVideo(url:URL){
+        self.asset = AVURLAsset.init(url: url, options: nil)
+        self.url = url
+        if(isLoad) {
+            self.setUpView()
         }
-        if(fm.isWritableFile(atPath: url.path)){
-            do {
-                try fm.moveItem(at: url, to: newURL)
-            } catch let err {
-                print(err)
-            }
-        }
-        else{
-            do {
-                try fm.copyItem(at: url, to: newURL)
-            } catch let err {
-                print(err)
-            }
-            
-        }
-        self.asset = AVURLAsset.init(url: newURL, options: nil)
-        //NSString *path = [[NSTemporaryDirectory() stringByStandardizingPath] stringByAppendingPathComponent:fileName];
-
-        // 存储视频到 temp
-        
-        weak var weakSelf = self
-        if(flag){
-            DispatchQueue.main.async {
-                weakSelf?.setUpView()
-            }
-        }
-        else{
-            DispatchQueue.main.sync {
-                weakSelf?.setUpView()
-            }
-        }
-        
-        
     }
     
 }
-extension VideoClipsViewController:UIImagePickerControllerDelegate,UINavigationControllerDelegate,PHPickerViewControllerDelegate,VideoClipsDelegate{
-    @available(iOS 14, *)
-    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-        weak var weakSelf = self
-        if(results.count == 0){
-            self.resolve(["cancel": true])
-            
-            picker.dismiss(animated: true, completion: {
-                weakSelf?.dismiss(animated: false) {}
-            })
-        }
-        else{
-            let provider = results[0].itemProvider
-            DispatchQueue.main.async {
-                weakSelf?.addLoadingView()
-                picker.dismiss(animated: true) {}
-            }
-            
-            provider.loadFileRepresentation(forTypeIdentifier: kUTTypeMovie as String) { url, Error in
-                weakSelf?.loadVideo(url: url!,flag: false)
-            }
-        }
-        
-    }
-    
-    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-        self.resolve(["cancel": true])
-        picker.dismiss(animated: true) {
-            self.dismiss(animated: false) {
-                
-            }
-        }
-        
-        
-    }
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        weak var weakSelf = self
-        let url = info[UIImagePickerController.InfoKey.mediaURL] as! URL
-        print("imagePickerController",url.absoluteString)
-        //info[UIImagePickerController.InfoKey.mediaURL]
-        DispatchQueue.main.async {
-            weakSelf?.addLoadingView()
-            weakSelf?.loadVideo(url: url,flag: true)
-            picker.dismiss(animated: true) {}
-            
-        }
-    }
+extension VideoClipsViewController:VideoClipsDelegate{
     func stopPlay() {
         self.player?.pause()
     }

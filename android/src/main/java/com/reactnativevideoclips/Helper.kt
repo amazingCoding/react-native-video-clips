@@ -40,10 +40,11 @@ object Helper {
     that.setResult(PRE_CODE,intent)
     that.finish()
   }
-  fun toSuccess(that: Activity, url: String, thum:String){
+  fun toSuccess(that: Activity, url: String, thum:String,name:String){
     val intent = Intent()
     intent.putExtra("url",url)
     intent.putExtra("thum",thum)
+    intent.putExtra("name", "/clip_video_temp/$name")
     intent.putExtra("cancel",false)
     that.setResult(PRE_CODE,intent)
     that.finish()

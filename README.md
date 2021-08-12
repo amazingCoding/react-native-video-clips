@@ -1,59 +1,32 @@
-# react-native-video-clips
+## video clips Tools 
 
-video clips
+### 基本功能构想
+* 提供完整的界面
+  * 选择图片界面 - 播放/剪辑界面 - 生成视频 - 返回 JS
+* 提供简化版功能
+  * 传入选择图片的地址 - 播放/剪辑界面 - 生成视频 - 返回 JS
+* 提供纯函数功能
+  * 解码视频（按照时间获取视频截图）
+  * 生成视频
 
-## Installation
+### TODO
+* IOS
+  * 替换核心功能库： FFMEG
+  * 修改逻辑 - 先选择图片 - 再弹出自定义弹层
+* android
+  * 修改逻辑
 
-```sh
-npm install react-native-video-clips
-```
-
-## Usage
-
-```js
-import VideoClips from "react-native-video-clips";
-
-// ...
-
-try {
-      const res = await VideoClips.select()
-      console.log(res);
-      if (!res.cancel) {
-        // get url to show
-      }
-    } catch (error) {
-      
-    }
-```
-
-
-```
-packagingOptions {
-    pickFirst 'lib/arm64-v8a/libc++_shared.so'
-    pickFirst 'lib/x86/libc++_shared.so'
-    pickFirst 'lib/armeabi-v7a/libc++_shared.so'
-}
-defaultConfig {
-    ndk {
-      abiFilters 'armeabi-v7a', 'arm64-v8a'     //过滤的so库版本
-    }
-}
-```
-
-0. 操作逻辑
-  * 选择视频
-  * 解码图片（30%进度展示）
-1. 图片解码服务
-  * 创建目录（删除已有的）
-  * 每次切换视频的时候不会删除，只有 finish 才会（直接退出 APP 造成垃圾在下次进入的时候删除）
-  * 切换视频的时候查看本地是否有缓存的解码图片了
-  * 切换视频的时候把前一个的任务都删除
-2. 播放
-  * 循环播放
-  * 自定时间段播放
+### 配置
+* IOS
+  * 获取相册权限(iOS14 以及以上不需要)
+  ```
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>In order to select/save photo, we need your permission to use camera</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>In order to select/save photo, we need your permission to use camera</string>
+  ```
+* Android
+  * 获取相册权限
+  * 本地存储权限
 
 
-## TODO
-* 指针跟随播放移动
-* 滚动操作
-* 按照位置导出视频
