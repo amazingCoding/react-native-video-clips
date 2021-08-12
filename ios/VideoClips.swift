@@ -41,6 +41,40 @@ class VideoClips: NSObject {
     @objc(compression:widthResolve:withRejecter:)
     func compression(name:String,resolve:@escaping RCTPromiseResolveBlock,reject:@escaping RCTPromiseRejectBlock) -> Void {
         print(name)
+        let newName = UUID.init().uuidString
+        let newPath = NSTemporaryDirectory() + newName + ".mov"
+        let outputUrl = URL.init(fileURLWithPath: newPath)
+        let url = URL(fileURLWithPath: name)
+        let asset = AVURLAsset.init(url: url, options: nil)
+        guard let exportSession = AVAssetExportSession.init(asset: asset, presetName: AVAssetExportPresetMediumQuality) else {
+            return
+        }
+        exportSession.outputURL = outputUrl
+        exportSession.outputFileType = .mov
+        exportSession.shouldOptimizeForNetworkUse = true
+        exportSession.exportAsynchronously {
+            DispatchQueue.main.async {
+                let status = exportSession.status
+                switch status {
+                case .failed:
+                    reject("cancelled", "cancelled", nil)
+                    break
+                case .cancelled:
+                    reject("cancelled", "cancelled", nil)
+                    break
+                case .completed:
+                    // 退出
+                    resolve([
+                        "videoPath":outputUrl.absoluteString,
+                        "url":"file://" + outputUrl.absoluteString,
+                    ])
+                    break
+                default:
+                    reject("cancelled", "cancelled", nil)
+                    break
+                }
+            }
+        }
     }
     
     @objc static func requiresMainQueueSetup() -> Bool {
